@@ -165,66 +165,73 @@ def get_track_statistics(track_id):
 
 
 def parse_gpx_and_save(file_content, file_name) -> tuple[bytes, int]:
-    # Parse GPX content from file-like object
-    tree = ET.ElementTree(ET.fromstring(file_content))
-    root = tree.getroot()
-    # we need to define default namespaces, if we dont, XPath cannot query single paths in xml tree
-    namespaces = {"default": "http://www.topografix.com/GPX/1/1"}
+    try:
+        # Parse GPX content from file-like object
+        tree = ET.ElementTree(ET.fromstring(file_content))
+        root = tree.getroot()
+        # we need to define default namespaces, if we dont, XPath cannot query single paths in xml tree
+        namespaces = {"default": "http://www.topografix.com/GPX/1/1"}
 
-    # Extract driver and vehicle information from the file_name
-    driver_name, vehicle_license_plate = file_name.split("_")[:2]
-    driver = Driver.query.filter_by(driver_name=driver_name).first()
-    vehicle = Vehicle.query.filter_by(vehicle_license_plate=vehicle_license_plate).first()
-    track = Track.query.filter_by(track_file_name=file_name).first()
+        # before doing anything else, we need to check, if any tracks are even present in the file, it not, then this file is of no use, cancel operation.
+        if len(root.findall(".//default:trk", namespaces)) == 0:
+            return b"gpxContainsNoTracks", 400
 
-    if not driver:
-        # Save driver to db
-        new_driver = Driver()
-        new_driver.driver_name = driver_name
+        # Extract driver and vehicle information from the file_name
+        driver_name, vehicle_license_plate = file_name.split("_")[:2]
+        driver = Driver.query.filter_by(driver_name=driver_name).first()
+        vehicle = Vehicle.query.filter_by(vehicle_license_plate=vehicle_license_plate).first()
+        track = Track.query.filter_by(track_file_name=file_name).first()
 
-        db.session.add(new_driver)
+        if not driver:
+            # Save driver to db
+            new_driver = Driver()
+            new_driver.driver_name = driver_name
+
+            db.session.add(new_driver)
+            db.session.commit()
+            driver = new_driver
+        if not vehicle:
+            # Save vehicle to db
+            new_vehicle = Vehicle()
+            new_vehicle.vehicle_license_plate = vehicle_license_plate
+
+            db.session.add(new_vehicle)
+            db.session.commit()
+            vehicle = new_vehicle
+
+        if track:
+            # Track already exists, dont upload
+            return b"uploadTrackAlreadyExists", 400
+
+        # Else we can then save the track into the database after reading its xml contents
+
+        track = Track(track_file_name=file_name, track_driver_id=driver.driver_id, track_vehicle_id=vehicle.vehicle_id)
+        db.session.add(track)
         db.session.commit()
-        driver = new_driver
-    if not vehicle:
-        # Save vehicle to db
-        new_vehicle = Vehicle()
-        new_vehicle.vehicle_license_plate = vehicle_license_plate
 
-        db.session.add(new_vehicle)
+        # Parse GPX data and save points
+        for trk in root.findall(".//default:trk", namespaces):
+            for trkseg in trk.findall("default:trkseg", namespaces):
+                for trkpt in trkseg.findall("default:trkpt", namespaces):
+                    lat = float(trkpt.get("lat"))
+                    lon = float(trkpt.get("lon"))
+                    ele = trkpt.find("default:ele", namespaces).text if trkpt.find("default:ele",
+                                                                                   namespaces) is not None else None
+                    timestamp = trkpt.find("default:time", namespaces).text
+                    point = Point(
+                        point_track_id=track.track_id,
+                        point_lat=lat,
+                        point_lon=lon,
+                        point_ele=float(ele) if ele else None,
+                        point_timestamp=parser.isoparse(timestamp)
+                    )
+                    db.session.add(point)
+
         db.session.commit()
-        vehicle = new_vehicle
 
-    if track:
-        # Track already exists, dont upload
-        return b"uploadTrackAlreadyExists", 400
-
-    # Else we can then save the track into the database after reading its xml contents
-
-    track = Track(track_file_name=file_name, track_driver_id=driver.driver_id, track_vehicle_id=vehicle.vehicle_id)
-    db.session.add(track)
-    db.session.commit()
-
-    # Parse GPX data and save points
-    for trk in root.findall(".//default:trk", namespaces):
-        for trkseg in trk.findall("default:trkseg", namespaces):
-            for trkpt in trkseg.findall("default:trkpt", namespaces):
-                lat = float(trkpt.get("lat"))
-                lon = float(trkpt.get("lon"))
-                ele = trkpt.find("default:ele", namespaces).text if trkpt.find("default:ele",
-                                                                               namespaces) is not None else None
-                timestamp = trkpt.find("default:time", namespaces).text
-                point = Point(
-                    point_track_id=track.track_id,
-                    point_lat=lat,
-                    point_lon=lon,
-                    point_ele=float(ele) if ele else None,
-                    point_timestamp=parser.isoparse(timestamp)
-                )
-                db.session.add(point)
-
-    db.session.commit()
-
-    return b"GPX File saved", 200
+        return b"uploadSuccessful", 200
+    except Exception as e:
+        return b"invalidGpxData", 400
 
 
 if __name__ == "__main__":

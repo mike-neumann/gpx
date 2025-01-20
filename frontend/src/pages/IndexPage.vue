@@ -50,6 +50,10 @@ function loadTracks() {
 
     // reset selected tracks
     selectedTracks.value = [];
+  }).catch(error => {
+    Notify.create({
+      message: i18n.global.t(JSON.parse(error.message).message)
+    });
   });
 }
 
@@ -64,7 +68,7 @@ function displayTracks() {
     });
   }).catch(error => {
     Notify.create({
-      message: error.message
+      message: i18n.global.t(JSON.parse(error.message).message)
     });
   });
 }

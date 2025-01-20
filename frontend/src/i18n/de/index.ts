@@ -6,6 +6,8 @@ export default {
   },
   uploadTrack: "Track hochladen",
   uploadTrackDescription: "Hier können Sie ihre .gpx Datei hochladen, die Sie danach auf der Karte anzeigen können",
+  invalidGpxData: "Fehler beim hochladen der GPX-Datei, die GPX Daten sind fehlerhaft",
+  gpxContainsNoTracks: "Die GPX-Datei enthält keine Tracks, die extrahiert werden können",
   upload: "Hochladen",
   uploadSuccessful: "Upload erfolgreich",
   uploadTrackAlreadyExists: "Track existiert bereits",

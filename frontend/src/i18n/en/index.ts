@@ -6,6 +6,8 @@ export default {
   },
   uploadTrack: "Upload track",
   uploadTrackDescription: "Here you can upload your .gpx file to later view its tracks on the map",
+  invalidGpxData: "Error while uploading gpx file, gpx data is invalid",
+  gpxContainsNoTracks: "Gpx file contains no extractable tracks",
   upload: "Upload",
   uploadSuccessful: "Upload successful",
   uploadTrackAlreadyExists: "Track already exists",
