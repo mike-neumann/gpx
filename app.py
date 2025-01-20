@@ -1,9 +1,10 @@
 import xml.etree.ElementTree as ET
 
+from dateutil import parser
 from flask import jsonify, Flask, request, make_response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, desc
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///tracks.db"
@@ -25,6 +26,7 @@ class Point(db.Model):
     point_lat = db.Column(db.Float, nullable=False)
     point_lon = db.Column(db.Float, nullable=False)
     point_ele = db.Column(db.Float, nullable=True)
+    point_timestamp = db.Column(db.DateTime, nullable=False)
 
     def to_dict(self):
         return {
@@ -32,7 +34,8 @@ class Point(db.Model):
             "point_track_id": self.point_track_id,
             "point_lat": self.point_lat,
             "point_lon": self.point_lon,
-            "point_ele": self.point_ele
+            "point_ele": self.point_ele,
+            "point_timestamp": self.point_timestamp
         }
 
 
@@ -130,7 +133,7 @@ def get_tracks(driver_id, vehicle_id):
 
 @app.route("/point/<track_id>", methods=["GET"])
 def get_points(track_id):
-    points = Point.query.filter_by(point_track_id=track_id)
+    points = Point.query.filter_by(point_track_id=track_id).order_by(desc(Point.point_timestamp))
 
     return jsonify([point.to_dict() for point in points])
 
@@ -207,13 +210,15 @@ def parse_gpx_and_save(file_content, file_name) -> tuple[bytes, int]:
             for trkpt in trkseg.findall("default:trkpt", namespaces):
                 lat = float(trkpt.get("lat"))
                 lon = float(trkpt.get("lon"))
-                ele = trkpt.find("ele").text if trkpt.find("ele") is not None else None
-
+                ele = trkpt.find("default:ele", namespaces).text if trkpt.find("default:ele",
+                                                                               namespaces) is not None else None
+                timestamp = trkpt.find("default:time", namespaces).text
                 point = Point(
                     point_track_id=track.track_id,
                     point_lat=lat,
                     point_lon=lon,
-                    point_ele=float(ele) if ele else None
+                    point_ele=float(ele) if ele else None,
+                    point_timestamp=parser.isoparse(timestamp)
                 )
                 db.session.add(point)
 

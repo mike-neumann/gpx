@@ -71,7 +71,9 @@ function displayTracks() {
 </script>
 
 <template>
-  <q-card>
+  <q-card flat
+          square
+  >
     <q-card-actions align="right">
       <q-btn-dropdown :label="$t('language')"
                       flat
@@ -99,7 +101,10 @@ function displayTracks() {
     </q-card-actions>
   </q-card>
 
-  <q-card flat>
+  <q-card flat
+          square
+          class="window-height"
+  >
     <q-card-section horizontal
                     class="row"
     >
@@ -130,6 +135,7 @@ function displayTracks() {
                 <q-file v-model="selectedFile"
                         :label="$t('upload')"
                         accept=".gpx"
+                        class="q-pa-lg"
                 />
               </q-card-section>
 
@@ -151,21 +157,19 @@ function displayTracks() {
                 />
 
                 <div class="row">
-                  <div class="col-6">
-                    <q-select v-model="selectedDriver"
-                              :label="$t('driver')"
-                              :options="apiStore.state.drivers"
-                              :option-label="(driver: Driver) => driver.driver_name"
-                    />
-                  </div>
+                  <q-select v-model="selectedDriver"
+                            :label="$t('driver')"
+                            :options="apiStore.state.drivers"
+                            :option-label="(driver: Driver) => driver.driver_name"
+                            class="col-6 q-pa-lg"
+                  />
 
-                  <div class="col-6">
-                    <q-select v-model="selectedVehicle"
-                              :label="$t('vehicle')"
-                              :options="apiStore.state.vehicles"
-                              :option-label="(vehicle: Vehicle) => vehicle.vehicle_license_plate"
-                    />
-                  </div>
+                  <q-select v-model="selectedVehicle"
+                            :label="$t('vehicle')"
+                            :options="apiStore.state.vehicles"
+                            :option-label="(vehicle: Vehicle) => vehicle.vehicle_license_plate"
+                            class="col-6 q-pa-lg"
+                  />
                 </div>
               </q-card-section>
 
@@ -176,7 +180,14 @@ function displayTracks() {
                 />
               </q-card-actions>
 
-              <q-card-section>
+              <q-separator class="q-mt-lg" />
+
+              <q-card-section class="q-mt-lg">
+                <message-box v-if="loadedTracks.length == 0"
+                             icon="info"
+                             color="blue"
+                             :text="$t('noTracksFound')"
+                />
                 <q-list padding>
                   <q-item v-for="track in loadedTracks"
                           tag="label"
@@ -227,7 +238,7 @@ function displayTracks() {
         >
           <q-tab-panel name="map">
             <q-card flat>
-              <q-card-section>
+              <q-card-section class="flex justify-center">
                 <Map ref="map" />
               </q-card-section>
             </q-card>
