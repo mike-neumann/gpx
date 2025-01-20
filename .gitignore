@@ -1,0 +1,6 @@
+.idea
+
+/instance
+/frontend/node_modules
+
+*.iml

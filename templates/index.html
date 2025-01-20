@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPX File Uploader and Map Viewer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+      }
+      .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+      }
+      .dropdowns, .upload-btn {
+          margin-bottom: 20px;
+      }
+      #map {
+          height: 400px;
+          width: 100%;
+      }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Upload GPX and View Tracks</h1>
+
+  <!-- File upload -->
+  <div class="upload-btn">
+    <input type="file" id="fileInput" accept=".gpx">
+    <button onclick="uploadFile()">Upload</button>
+  </div>
+
+  <!-- Dropdowns -->
+  <div class="dropdowns">
+    <select id="driverSelect">
+      <option value="">Select Driver</option>
+    </select>
+    <select id="vehicleSelect">
+      <option value="">Select Vehicle</option>
+    </select>
+  </div>
+
+  <button onclick="showTracks()">Show Tracks</button>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/togeojson@0.16.0/togeojson.js"></script>
+
+<script>
+  let gpxData = null;  // Holds the uploaded GPX data
+  let map;
+
+  // Initialize map
+  function initMap() {
+    map = L.map('map').setView([51.505, -0.09], 13); // Set default view (center and zoom level)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+  }
+
+  // Upload the GPX file
+  function uploadFile() {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) {
+      alert("Please select a file to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/upload", {
+      method: "POST",
+      body: formData,
+    })
+      .then(response => response.json())
+      .then(data => {
+        alert("File uploaded successfully!");
+        loadDriversAndVehicles();  // Refresh dropdowns after upload
+      })
+      .catch(error => {
+        console.error("Error uploading file:", error);
+      });
+  }
+
+  // Load drivers and vehicles into the dropdowns
+  function loadDriversAndVehicles() {
+    fetch('/drivers-and-vehicles')
+      .then(response => response.json())
+      .then(data => {
+        const driverSelect = document.getElementById("driverSelect");
+        const vehicleSelect = document.getElementById("vehicleSelect");
+
+        driverSelect.innerHTML = '<option value="">Select Driver</option>';
+        vehicleSelect.innerHTML = '<option value="">Select Vehicle</option>';
+
+        data.drivers.forEach(driver => {
+          const option = document.createElement("option");
+          option.value = driver.driver_id;
+          option.text = driver.driver_name;
+          driverSelect.appendChild(option);
+        });
+
+        data.vehicles.forEach(vehicle => {
+          const option = document.createElement("option");
+          option.value = vehicle.vehicle_id;
+          option.text = vehicle.vehicle_license_plate;
+          vehicleSelect.appendChild(option);
+        });
+      });
+  }
+
+  // Show tracks on the map
+  function showTracks() {
+    const driverId = document.getElementById("driverSelect").value;
+    const vehicleId = document.getElementById("vehicleSelect").value;
+
+    if (!driverId || !vehicleId) {
+      alert("Please select both driver and vehicle.");
+      return;
+    }
+
+    fetch(`/tracks?driver_id=${driverId}&vehicle_id=${vehicleId}`)
+      .then(response => response.json())
+      .then(data => {
+        // Clear previous tracks
+        if (map) {
+          map.eachLayer(function (layer) {
+            if (layer instanceof L.GeoJSON) {
+              map.removeLayer(layer);
+            }
+          });
+        }
+
+        // Add the tracks to the map
+        const geojsonData = data.tracks.map(track => {
+          return {
+            type: "FeatureCollection",
+            features: track.points.map(point => ({
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [point.point_lon, point.point_lat],
+              },
+            })),
+          };
+        });
+
+        geojsonData.forEach(trackGeoJSON => {
+          L.geoJSON(trackGeoJSON).addTo(map);
+        });
+      });
+  }
+
+  // Initialize the map on page load
+  window.onload = function() {
+    initMap();
+    loadDriversAndVehicles(); // Load drivers and vehicles initially
+  };
+</script>
+
+</body>
+</html>
