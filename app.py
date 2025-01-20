@@ -210,27 +210,26 @@ def parse_gpx_and_save(file_content, file_name) -> tuple[bytes, int]:
         db.session.commit()
 
         # Parse GPX data and save points
-        for trk in root.findall(".//default:trk", namespaces):
-            for trkseg in trk.findall("default:trkseg", namespaces):
-                for trkpt in trkseg.findall("default:trkpt", namespaces):
-                    lat = float(trkpt.get("lat"))
-                    lon = float(trkpt.get("lon"))
-                    ele = trkpt.find("default:ele", namespaces).text if trkpt.find("default:ele",
-                                                                                   namespaces) is not None else None
-                    timestamp = trkpt.find("default:time", namespaces).text
-                    point = Point(
-                        point_track_id=track.track_id,
-                        point_lat=lat,
-                        point_lon=lon,
-                        point_ele=float(ele) if ele else None,
-                        point_timestamp=parser.isoparse(timestamp)
-                    )
-                    db.session.add(point)
+        for trkpt in root.findall(".//default:trkpt", namespaces):
+            lat = float(trkpt.get("lat"))
+            lon = float(trkpt.get("lon"))
+            ele = trkpt.find("default:ele", namespaces).text if trkpt.find("default:ele",
+                                                                           namespaces) is not None else None
+            timestamp = trkpt.find("default:time", namespaces).text
+            point = Point(
+                point_track_id=track.track_id,
+                point_lat=lat,
+                point_lon=lon,
+                point_ele=float(ele) if ele else None,
+                point_timestamp=parser.isoparse(timestamp)
+            )
+            db.session.add(point)
 
         db.session.commit()
 
         return b"uploadSuccessful", 200
     except Exception as e:
+        print(e.__traceback__)
         return b"invalidGpxData", 400
 
 
