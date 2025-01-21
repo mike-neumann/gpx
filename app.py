@@ -177,7 +177,7 @@ def parse_gpx_and_save(file_content, file_name) -> tuple[bytes, int]:
     namespaces = {"default": "http://www.topografix.com/GPX/1/1"}
 
     # before doing anything else, we need to check, if any tracks are even present in the file, it not, then this file is of no use, cancel operation.
-    if len(root.findall(".//default:trk", namespaces)) == 0:
+    if len(root.findall(".//default:trkpt", namespaces)) == 0:
         return b"gpxContainsNoTracks", 400
 
     # Extract driver and vehicle information from the file_name
