@@ -20,5 +20,6 @@ export default {
   displayTracks: "Tracks laden",
   displayTracksSuccessful: "Tracks erfolgreich geladen",
   map: "Karte",
-  statistics: "Statistiken"
+  statistics: "Statistiken",
+  empty: "Leer"
 };

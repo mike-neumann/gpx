@@ -70,7 +70,7 @@ class ApiService {
     return await response.json();
   }
 
-  async getTracks(driverId: Number, vehicleId: Number): Promise<Track[]> {
+  async getTracks(driverId?: Number, vehicleId?: Number): Promise<Track[]> {
     const response = await fetch(`http://127.0.0.1:5000/track/${driverId}/${vehicleId}`);
 
     if (!response.ok) {

@@ -11,8 +11,8 @@ import { apiStore } from "stores/apiStore";
 import MessageBox from "components/MessageBox.vue";
 
 const selectedFile = ref<File>();
-const selectedDriver = ref<Driver>();
-const selectedVehicle = ref<Vehicle>();
+const selectedDriver = ref<Driver | null>(null);
+const selectedVehicle = ref<Vehicle | null>(null);
 
 const loadedTracks = ref<Track[]>([]);
 const selectedTracks = ref<Track[]>([]);
@@ -45,7 +45,7 @@ function uploadTrack() {
 }
 
 function loadTracks() {
-  apiService.getTracks(selectedDriver.value!.driver_id, selectedVehicle.value!.vehicle_id).then(tracks => {
+  apiService.getTracks(selectedDriver.value?.driver_id, selectedVehicle.value?.vehicle_id).then(tracks => {
     loadedTracks.value = tracks;
 
     // reset selected tracks
@@ -163,15 +163,15 @@ function displayTracks() {
                 <div class="row">
                   <q-select v-model="selectedDriver"
                             :label="$t('driver')"
-                            :options="apiStore.state.drivers"
-                            :option-label="(driver: Driver) => driver.driver_name"
+                            :options="[null, ...apiStore.state.drivers]"
+                            :option-label="(driver?: Driver) => driver != null ? driver.driver_name : $t('empty')"
                             class="col-6 q-pa-lg"
                   />
 
                   <q-select v-model="selectedVehicle"
                             :label="$t('vehicle')"
-                            :options="apiStore.state.vehicles"
-                            :option-label="(vehicle: Vehicle) => vehicle.vehicle_license_plate"
+                            :options="[null, ...apiStore.state.vehicles]"
+                            :option-label="(vehicle?: Vehicle) => vehicle != null ? vehicle.vehicle_license_plate : $t('empty')"
                             class="col-6 q-pa-lg"
                   />
                 </div>
@@ -179,7 +179,6 @@ function displayTracks() {
 
               <q-card-actions align="right">
                 <q-btn :label="$t('searchTracks')"
-                       :disable="selectedDriver == undefined || selectedVehicle == undefined"
                        @click="loadTracks()"
                 />
               </q-card-actions>

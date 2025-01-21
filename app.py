@@ -124,9 +124,14 @@ def get_all_tracks():
 
 @app.route("/track/<driver_id>/<vehicle_id>", methods=["GET"])
 def get_tracks(driver_id, vehicle_id):
+    if driver_id == "undefined":
+        driver_id = None
+    if vehicle_id == "undefined":
+        vehicle_id = None
+
     tracks = (Track.query
-              .filter(Track.track_driver_id == driver_id)
-              .filter(Track.track_vehicle_id == vehicle_id))
+              .filter(Track.track_driver_id == driver_id if driver_id is not None else True == True)
+              .filter(Track.track_vehicle_id == vehicle_id if vehicle_id is not None else True == True))
 
     return jsonify([track.to_dict() for track in tracks])
 
